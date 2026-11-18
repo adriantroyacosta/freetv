@@ -47,6 +47,9 @@ final class HomeData {
      * BTC, ETH and SOL; in Brazilian reais also the dollar (USDT/BRL), which Binance doesn't list for most currencies.
      * None with show_crypto=false.
      */
+    /** Weather on screen (drawer, corner, screensaver); it is still fetched for the sunset that darkens the home. */
+    static final boolean SHOW_WEATHER = false;
+
     static int coinCount() {
         if (!Config.SHOW_CRYPTO) return 0;
         return CURRENCY.equals("BRL") ? COINS.length : 3;

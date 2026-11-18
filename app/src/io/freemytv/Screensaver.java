@@ -9,6 +9,7 @@ import android.service.dreams.DreamService;
  */
 public class Screensaver extends DreamService {
     private DreamView view;
+    private ClockDream clock;   // home_style=minimal
 
     @Override public void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -17,6 +18,11 @@ public class Screensaver extends DreamService {
         setInteractive(false);
         setFullscreen(true);
         setScreenBright(true);
+        if (Config.MINIMAL) {
+            clock = new ClockDream(this);
+            setContentView(clock);
+            return;
+        }
         view = new DreamView(this);
         setContentView(view);
     }
@@ -24,15 +30,18 @@ public class Screensaver extends DreamService {
     @Override public void onDreamingStarted() {
         super.onDreamingStarted();
         if (view != null) view.start();
+        if (clock != null) clock.start();
     }
 
     @Override public void onDreamingStopped() {
         if (view != null) view.stop();
+        if (clock != null) clock.stop();
         super.onDreamingStopped();
     }
 
     @Override public void onDetachedFromWindow() {
         if (view != null) view.stop();
+        if (clock != null) clock.stop();
         super.onDetachedFromWindow();
     }
 }

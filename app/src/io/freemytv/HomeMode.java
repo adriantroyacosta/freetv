@@ -50,6 +50,9 @@ final class HomeMode {
      */
     static final String[] DEBLOAT = {
         "com.google.android.play.games", "com.google.android.youtube.tvmusic",        // Play Games, YouTube Music
+        // Sony Bravia
+        "com.sony.dtv.promos", "com.sony.dtv.sonytab", "com.sonypicturescore",        // Sony promos, Sony tab, Bravia Core
+        "com.vewd.core.integration.dia", "com.sony.dtv.b2b.vendorprotocol", "com.sony.dtv.b2b.softap",
         // TCL
         "com.tcl.magiconnectfree", "com.tcl.miracast",                                // screen mirroring apps
         "com.tcl.waterfall.overseas", "com.tcl.channelplus",                          // TCL Channel and its Live TV
@@ -121,7 +124,8 @@ final class HomeMode {
             JSONObject latest = state(c);
             latest.put("originalHome", home).put("originalDream", dream);
             save(c, latest);
-            if (metrics(latest, ORIGINAL) == null && !home.isEmpty()) {
+            JSONObject origMetrics = metrics(latest, ORIGINAL);
+            if ((origMetrics == null || !origMetrics.has("homeMs") || !origMetrics.has("memAvailableMB") || !origMetrics.has("homePssMB")) && !home.isEmpty()) {
                 busy(c, Ui.tr("Medindo o Início original…", "Measuring the original home screen…"));
                 measureHomeTime(c, adb, ORIGINAL);
                 measureMemory(c, adb, ORIGINAL);
@@ -147,16 +151,17 @@ final class HomeMode {
             s.put("mode", FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(sorted(disabled)));
             save(c, s);
-            notice(c, Ui.tr("Free My TV ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
-                    "Free My TV is on: new home screen and screensaver, " + disabled.size() + " apps turned off.",
-                    "Free My TV activado: nueva pantalla de inicio y protector de pantalla, " + disabled.size() + " apps desactivadas."));
-            busy(c, Ui.tr("Medindo o Free My TV…", "Measuring Free My TV…"));
+            notice(c, Ui.tr("TVos ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
+                    "TVos is on: new home screen and screensaver, " + disabled.size() + " apps turned off.",
+                    "TVos activado: nueva pantalla de inicio y protector de pantalla, " + disabled.size() + " apps desactivadas."));
+            busy(c, Ui.tr("Medindo o TVos…", "Measuring TVos…"));
             measureHomeTime(c, adb, FREE);
+            measureMemory(c, adb, FREE);
             done(c, null);
             adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             ModeJob.schedule(c, ModeJob.MEMORY, FREE, 120_000);
         } catch (Exception e) {
-            done(c, Ui.tr("Não deu para ligar o Free My TV: ", "Couldn't turn on Free My TV: ") + e.getMessage());
+            done(c, Ui.tr("Não deu para ligar o TVos: ", "Couldn't turn on TVos: ") + e.getMessage());
         }
     }
 
@@ -198,6 +203,7 @@ final class HomeMode {
             }
             busy(c, Ui.tr("Medindo o Início original…", "Measuring the original home screen…"));
             measureHomeTime(c, adb, ORIGINAL);
+            measureMemory(c, adb, ORIGINAL);
             done(c, null);
             adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             ModeJob.schedule(c, ModeJob.MEMORY, ORIGINAL, 120_000);
@@ -232,8 +238,8 @@ final class HomeMode {
                 }
                 s.put("homeReverted", true).put("disabled", kept);
                 save(app, s);
-                notice(app, Ui.tr("O Início do Free My TV caiu 3 vezes seguidas; voltei para o Início original.",
-                        "Free My TV's home screen crashed 3 times in a row; I switched back to the original one."));
+                notice(app, Ui.tr("O Início do TVos caiu 3 vezes seguidas; voltei para o Início original.",
+                        "The TVos home screen crashed 3 times in a row; I switched back to the original one."));
                 adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             } catch (Exception e) {
                 AppLog.w("could not give the home screen back: " + e.getMessage());
@@ -290,14 +296,14 @@ final class HomeMode {
                 latest.put("disabled", new JSONArray(sorted(disabled)));
                 save(app, latest);
             } catch (Exception e) {
-                notice(app, Ui.tr("Não consegui conferir o Free My TV: ", "Couldn't check Free My TV: ") + e.getMessage());
+                notice(app, Ui.tr("Não consegui conferir o TVos: ", "Couldn't check TVos: ") + e.getMessage());
                 return;
             }
             if (!fixed.isEmpty()) {
                 notice(app, (updated ? Ui.tr("A atualização da TV religou ", "The TV update turned back on ")
                         : Ui.tr("Desliguei o que faltava: ", "Turned off what was missing: ")) + String.join(", ", fixed) + ".");
             } else if (updated) {
-                notice(app, Ui.tr("A TV foi atualizada; o Free My TV continua igual.", "The TV was updated; Free My TV is still on."));
+                notice(app, Ui.tr("A TV foi atualizada; o TVos continua igual.", "The TV was updated; TVos is still on."));
             }
         }
     }
@@ -440,18 +446,18 @@ final class HomeMode {
 
     private static void putMetric(Context c, String mode, String key, long value) throws JSONException {
         JSONObject s = state(c);
-        JSONObject metrics = s.optJSONObject("metrics");
+        JSONObject metrics = s.optJSONObject("measured");
         if (metrics == null) metrics = new JSONObject();
         JSONObject m = metrics.optJSONObject(mode);
         if (m == null) m = new JSONObject();
         m.put(key, value).put("at", System.currentTimeMillis());
         metrics.put(mode, m);
-        s.put("metrics", metrics);
+        s.put("measured", metrics);
         save(c, s);
     }
 
     private static JSONObject metrics(JSONObject s, String mode) {
-        JSONObject metrics = s.optJSONObject("metrics");
+        JSONObject metrics = s.optJSONObject("measured");
         return metrics == null ? null : metrics.optJSONObject(mode);
     }
 
@@ -460,20 +466,56 @@ final class HomeMode {
     static JSONObject state(Context c) {
         synchronized (FILE_LOCK) {
             File f = new File(c.getFilesDir(), "home-state.json");
-            if (!f.exists()) return defaults();
-            try (FileInputStream in = new FileInputStream(f)) {
-                byte[] data = new byte[(int) f.length()];
-                int read = 0;
-                while (read < data.length) {
-                    int n = in.read(data, read, data.length - read);
-                    if (n < 0) break;
-                    read += n;
-                }
-                return new JSONObject(new String(data, 0, read, StandardCharsets.UTF_8));
-            } catch (IOException | JSONException e) {
-                return defaults();
+            JSONObject s = null;
+            if (f.exists()) {
+                try (FileInputStream in = new FileInputStream(f)) {
+                    byte[] data = new byte[(int) f.length()];
+                    int read = 0;
+                    while (read < data.length) {
+                        int n = in.read(data, read, data.length - read);
+                        if (n < 0) break;
+                        read += n;
+                    }
+                    s = new JSONObject(new String(data, 0, read, StandardCharsets.UTF_8));
+                } catch (IOException | JSONException ignored) {}
             }
+            if (s == null) s = defaults();
+            // "metrics" (before "measured") could hold made-up numbers: drop them, the next switch measures again.
+            boolean stale = s.remove("metrics") != null;
+            // Only needed while the state doesn't say Free My TV yet (it asks the package manager).
+            boolean healed = !FREE.equals(s.optString("mode")) && syncLocal(c, s);
+            if (healed || stale) save(c, s);
+            return s;
         }
+    }
+
+    /**
+     * Self-heals the state if the app's data was lost while it was already the TV's home screen. Measurements are
+     * never filled in here: the comparison shows only what measureHomeTime and measureMemory really measured.
+     */
+    private static boolean syncLocal(Context c, JSONObject s) {
+        boolean changed = false;
+        try {
+            android.content.Intent homeIntent = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                    .addCategory(android.content.Intent.CATEGORY_HOME);
+            android.content.pm.ResolveInfo ri = c.getPackageManager().resolveActivity(homeIntent, 0);
+            boolean isHomeNow = ri != null && ri.activityInfo != null && PKG.equals(ri.activityInfo.packageName);
+            if (isHomeNow && !FREE.equals(s.optString("mode")) && s.optString("busy").isEmpty()) {
+                s.put("mode", FREE).put("homeReverted", false);
+                if (s.optString("originalHome").isEmpty()) s.put("originalHome", GOOGLE_HOME);
+                if (s.optString("originalDream").isEmpty()) s.put("originalDream", "com.google.android.apps.tv.dreamx/.DreamxService");
+                if (s.optJSONArray(" notices") == null && s.optJSONArray("notices") == null) {
+                    JSONArray notices = new JSONArray();
+                    notices.put(new JSONObject().put("at", System.currentTimeMillis())
+                            .put("text", Ui.tr("TVos ativo: Início e tela de descanso configurados.",
+                                    "TVos active: home screen and screensaver configured.",
+                                    "TVos activo: pantalla de inicio y protector configurados.")));
+                    s.put("notices", notices);
+                }
+                changed = true;
+            }
+        } catch ( Exception ignored) {}
+        return changed;
     }
 
     private static JSONObject defaults() {

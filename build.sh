@@ -45,6 +45,7 @@ LON="$(number longitude -74.0060)"
 ASSIST=false; [ "$(prop disable_assistant false)" = "true" ] && ASSIST=true
 CRYPTO=true; [ "$(prop show_crypto true)" = "false" ] && CRYPTO=false
 EXPLORE=true; [ "$(prop explore_tab true)" = "false" ] && EXPLORE=false
+MINIMAL=true; [ "$(prop home_style minimal)" = "full" ] && MINIMAL=false
 
 rm -rf out && mkdir -p out/gen/io/freemytv out/classes
 cat > out/gen/io/freemytv/Config.java <<EOF
@@ -65,10 +66,12 @@ final class Config {
     static final boolean DISABLE_ASSISTANT = $ASSIST;
     static final boolean SHOW_CRYPTO = $CRYPTO;
     static final boolean EXPLORE_TAB = $EXPLORE;
+    static final boolean MINIMAL = $MINIMAL;
     static final int SHELF_ROWS = $ROWS;
     static final int SHELF_COLUMNS = $COLS;
     static final int CARDS = $CARDS;
     static final String SHELF_APPS = "$(prop shelf_apps '')";
+    static final String INPUT_NAMES = "$(prop input_names '')";
 }
 EOF
 

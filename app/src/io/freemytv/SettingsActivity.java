@@ -132,7 +132,7 @@ public class SettingsActivity extends Activity {
         SettingsView(SettingsActivity a) {
             super(a);
             activity = a;
-            for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.28f, 0.85f, 0);
+            for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.18f, 0.94f, 0);
             HomeData.Weather wx = HomeData.get(a).weather;
             Shaders.sky(scene.palette, System.currentTimeMillis(), wx.sunrise, wx.sunset);
             scene.setMotion(0.5f, 0.2f);
@@ -224,12 +224,11 @@ public class SettingsActivity extends Activity {
             }
             scene.drawBackground(c);
 
-            // On the left: big symbol, title, description.
+            // On the left: the name (the logo is just the word), description and version.
             float cx = 500 * k;
-            Symbols.draw(getContext(), c, "sparkles", cx, 400 * k, 150 * k, 0xEBFFFFFF);
-            c.drawText("Free My TV", cx, 612 * k, title);
-            c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
-            c.drawText(versionName(getContext()), cx, 704 * k, version);
+            c.drawText("TVos", cx, 512 * k, title);
+            c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 560 * k, subtitle);
+            c.drawText(versionName(getContext()), cx, 604 * k, version);
 
             if (screen == MAIN) drawMain(c, seconds); else drawChoice(c);
         }
@@ -237,7 +236,7 @@ public class SettingsActivity extends Activity {
         private void drawMain(Canvas c, float seconds) {
             boolean working = busy();
             String busyText = state.optString("busy");
-            String mode = freeActive() ? "Free My TV" : Ui.tr("Original", "Original");
+            String mode = freeActive() ? "TVos" : Ui.tr("Original", "Original");
             String[] labels = {Ui.tr("Início", "Home Screen"), Ui.tr("Tela de Descanso", "Screensaver"), Ui.tr("Ajustes da TV", "TV Settings")};
             String[] values = {working ? "" : mode, Ui.tr("Ver agora", "Preview"), ""};
             for (int i = 0; i < 3; i++) {
@@ -278,8 +277,7 @@ public class SettingsActivity extends Activity {
                 y += 46 * k;
             }
             y = drawComparison(c, y);
-            y = drawRecs(c, y + 26 * k);
-            drawNotices(c, y + 40 * k);
+            drawNotices(c, y + 44 * k);
         }
 
         /** Home screen picks: status, and the credit TMDB asks for. */
@@ -327,9 +325,9 @@ public class SettingsActivity extends Activity {
             c.drawText(Ui.tr("COMPARAÇÃO", "COMPARISON"), x, y, header);
             cellValue.setColor(0x73FFFFFF);
             c.drawText("Original", colA, y, cellValue);
-            c.drawText("Free My TV", colB, y, cellValue);
+            c.drawText("TVos", colB, y, cellValue);
             cellValue.setColor(0xD9FFFFFF);
-            JSONObject metrics = state.optJSONObject("metrics");
+            JSONObject metrics = state.optJSONObject("measured");
             JSONObject a = metrics == null ? null : metrics.optJSONObject(HomeMode.ORIGINAL);
             JSONObject b = metrics == null ? null : metrics.optJSONObject(HomeMode.FREE);
             String[][] rows = {{Ui.tr("Botão Início", "Home button"), "homeMs"}, {Ui.tr("Memória livre", "Free memory"), "memAvailableMB"},
@@ -362,7 +360,7 @@ public class SettingsActivity extends Activity {
         private void drawChoice(Canvas c) {
             Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
             c.drawText(Ui.tr("Início", "Home Screen"), LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
-            String[][] options = {{"Free My TV", Ui.tr("Sem anúncios, com a tela de descanso nova", "No ads, with the new screensaver")},
+            String[][] options = {{"TVos", Ui.tr("Sem anúncios, com a tela de descanso nova", "No ads, with the new screensaver")},
                     {"Original", Ui.tr("O Início de fábrica da TV", "The TV's factory home screen")}};
             int current = freeActive() ? 0 : 1;
             for (int i = 0; i < 2; i++) {
@@ -409,9 +407,9 @@ public class SettingsActivity extends Activity {
 
         private static String versionName(Context c) {
             try {
-                return "Free My TV " + c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName;
+                return "TVos " + c.getPackageManager().getPackageInfo(c.getPackageName(), 0).versionName;
             } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-                return "Free My TV";
+                return "TVos";
             }
         }
 

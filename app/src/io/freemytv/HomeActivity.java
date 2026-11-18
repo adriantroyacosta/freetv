@@ -15,7 +15,7 @@ import android.widget.TextView;
  * back to the TV's original one.
  */
 public class HomeActivity extends Activity {
-    private HomeView home;
+    private HomeScreen home;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -24,8 +24,8 @@ public class HomeActivity extends Activity {
             // Don't try to draw again: only show a notice while the main process restores the original home screen.
             HomeMode.requestRevertHome(this);
             TextView t = new TextView(this);
-            t.setText(Ui.tr("O Início do Free My TV teve um problema.\nVoltando para o Início original da TV…",
-                    "Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…"));
+            t.setText(Ui.tr("O Início do TVos teve um problema.\nVoltando para o Início original da TV…",
+                    "The TVos home screen ran into a problem.\nGoing back to the TV's original home screen…"));
             t.setTextColor(Color.WHITE);
             t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
             t.setGravity(Gravity.CENTER);
@@ -34,8 +34,10 @@ public class HomeActivity extends Activity {
             return;
         }
         Ui.init(this);
-        home = new HomeView(this);
-        setContentView(home);
+        // home_style=minimal (the default): the light one; full: photos, picks, weather and glass.
+        android.view.View view = Config.MINIMAL ? new MinimalView(this) : new HomeView(this);
+        home = (HomeScreen) view;
+        setContentView(view);
         getWindow().setBackgroundDrawable(null);
     }
 

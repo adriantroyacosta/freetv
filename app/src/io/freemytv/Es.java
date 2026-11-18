@@ -29,8 +29,8 @@ final class Es {
         put("Shortcuts", "Accesos directos");
         put("Couldn't open ", "No se pudo abrir ");
         put("Series", "Serie");
-        put("Free My TV's home screen ran into a problem.\nGoing back to the TV's original home screen…",
-                "La pantalla de inicio de Free My TV tuvo un problema.\nRegresando a la pantalla de inicio original de la TV…");
+        put("The TVos home screen ran into a problem.\nGoing back to the TV's original home screen…",
+                "La pantalla de inicio de TVos tuvo un problema.\nRegresando a la pantalla de inicio original de la TV…");
 
         // Weather and prices
         put("Weather", "Clima");
@@ -75,8 +75,8 @@ final class Es {
         put("Switching the home screen and screensaver…", "Cambiando la pantalla de inicio y el protector de pantalla…");
         put("Android didn't accept the new home screen", "Android no aceptó la nueva pantalla de inicio");
         put("Turning off apps (", "Desactivando apps (");
-        put("Measuring Free My TV…", "Midiendo Free My TV…");
-        put("Couldn't turn on Free My TV: ", "No se pudo activar Free My TV: ");
+        put("Measuring TVos…", "Midiendo TVos…");
+        put("Couldn't turn on TVos: ", "No se pudo activar TVos: ");
         put("Turning the apps back on…", "Reactivando las apps…");
         put("Turning apps back on (", "Reactivando apps (");
         put("Restoring the original home screen…", "Restaurando la pantalla de inicio original…");
@@ -85,13 +85,13 @@ final class Es {
         put("the original home screen", "la pantalla de inicio original");
         put("Original mode, but I couldn't turn back on: ", "Modo original, pero no pude reactivar: ");
         put("Couldn't go back to the original: ", "No se pudo regresar al original: ");
-        put("Free My TV's home screen crashed 3 times in a row; I switched back to the original one.",
-                "La pantalla de inicio de Free My TV falló 3 veces seguidas; regresé a la original.");
+        put("The TVos home screen crashed 3 times in a row; I switched back to the original one.",
+                "La pantalla de inicio de TVos falló 3 veces seguidas; regresé a la original.");
         put("the home screen", "la pantalla de inicio");
         put("the screensaver", "el protector de pantalla");
-        put("Couldn't check Free My TV: ", "No se pudo revisar Free My TV: ");
+        put("Couldn't check TVos: ", "No se pudo revisar TVos: ");
         put("The TV update turned back on ", "La actualización de la TV volvió a activar ");
         put("Turned off what was missing: ", "Desactivé lo que faltaba: ");
-        put("The TV was updated; Free My TV is still on.", "La TV se actualizó; Free My TV sigue activo.");
+        put("The TV was updated; TVos is still on.", "La TV se actualizó; TVos sigue activo.");
     }
 }
