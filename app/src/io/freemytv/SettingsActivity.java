@@ -224,12 +224,11 @@ public class SettingsActivity extends Activity {
             }
             scene.drawBackground(c);
 
-            // On the left: big symbol, title, description.
+            // On the left: the name (the logo is just the word), description and version.
             float cx = 500 * k;
-            Symbols.draw(getContext(), c, "sparkles", cx, 400 * k, 150 * k, 0xEBFFFFFF);
-            c.drawText("TVos", cx, 612 * k, title);
-            c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 660 * k, subtitle);
-            c.drawText(versionName(getContext()), cx, 704 * k, version);
+            c.drawText("TVos", cx, 512 * k, title);
+            c.drawText(Ui.tr("Início e tela de descanso da TV", "Your TV's home screen and screensaver"), cx, 560 * k, subtitle);
+            c.drawText(versionName(getContext()), cx, 604 * k, version);
 
             if (screen == MAIN) drawMain(c, seconds); else drawChoice(c);
         }
