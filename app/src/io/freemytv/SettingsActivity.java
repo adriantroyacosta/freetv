@@ -132,7 +132,7 @@ public class SettingsActivity extends Activity {
         SettingsView(SettingsActivity a) {
             super(a);
             activity = a;
-            for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.28f, 0.85f, 0);
+            for (int i = 0; i < pop.length; i++) pop[i] = new Spring(0.18f, 0.94f, 0);
             HomeData.Weather wx = HomeData.get(a).weather;
             Shaders.sky(scene.palette, System.currentTimeMillis(), wx.sunrise, wx.sunset);
             scene.setMotion(0.5f, 0.2f);
@@ -278,8 +278,7 @@ public class SettingsActivity extends Activity {
                 y += 46 * k;
             }
             y = drawComparison(c, y);
-            y = drawRecs(c, y + 26 * k);
-            drawNotices(c, y + 40 * k);
+            drawNotices(c, y + 44 * k);
         }
 
         /** Home screen picks: status, and the credit TMDB asks for. */

@@ -49,6 +49,40 @@ final class Backdrop {
         nightImage = night == null ? null : Bitmap.createBitmap(night, FW, FH, Bitmap.Config.ARGB_8888);
     }
 
+    /**
+     * Full-bleed photographic wallpaper at 1920×1080 in GPU memory (HARDWARE), with subtle top and bottom scrims
+     * pre-baked once so every frame is a single texture blit, plus blurred glass/frost arrays for the dock and buttons.
+     */
+    static Backdrop wallpaper(Bitmap src) {
+        if (src == null) return null;
+        Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(out);
+        Paint photo = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.DITHER_FLAG);
+        float scale = Math.max((float) W / src.getWidth(), (float) H / src.getHeight());
+        float sw = src.getWidth() * scale, sh = src.getHeight() * scale;
+        c.drawBitmap(src, null, new RectF((W - sw) / 2, (H - sh) / 2, (W + sw) / 2, (H + sh) / 2), photo);
+        if (src != out) src.recycle();
+
+        int[] frost = reduce(out, FW, FH, 3, 3);
+        int[] night = darken(frost.clone(), 0.72f);
+        int[] glass = reduce(out, GW, GH, 2, 2);
+        int[] lightGlass = darken(glass.clone(), 0.36f);
+        int[] nightGlass = darken(glass, 0.56f);
+
+        Paint scrim = new Paint(Paint.DITHER_FLAG);
+        scrim.setShader(new LinearGradient(0, 0, 0, H * 0.42f,
+                new int[] {black(0.38f), black(0.16f), 0},
+                new float[] {0, 0.55f, 1}, Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H * 0.42f, scrim);
+
+        scrim.setShader(new LinearGradient(0, H * 0.52f, 0, H,
+                new int[] {0, black(0.24f), black(0.54f)},
+                new float[] {0, 0.5f, 1}, Shader.TileMode.CLAMP));
+        c.drawRect(0, H * 0.52f, W, H, scrim);
+
+        return new Backdrop(gpu(out), frost, null, null, null, null, lightGlass, night, nightGlass);
+    }
+
     static Backdrop make(Bitmap src, boolean forLight) {
         Bitmap out = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(out);

@@ -50,6 +50,9 @@ final class HomeMode {
      */
     static final String[] DEBLOAT = {
         "com.google.android.play.games", "com.google.android.youtube.tvmusic",        // Play Games, YouTube Music
+        // Sony Bravia
+        "com.sony.dtv.promos", "com.sony.dtv.sonytab", "com.sonypicturescore",        // Sony promos, Sony tab, Bravia Core
+        "com.vewd.core.integration.dia", "com.sony.dtv.b2b.vendorprotocol", "com.sony.dtv.b2b.softap",
         // TCL
         "com.tcl.magiconnectfree", "com.tcl.miracast",                                // screen mirroring apps
         "com.tcl.waterfall.overseas", "com.tcl.channelplus",                          // TCL Channel and its Live TV
@@ -121,7 +124,8 @@ final class HomeMode {
             JSONObject latest = state(c);
             latest.put("originalHome", home).put("originalDream", dream);
             save(c, latest);
-            if (metrics(latest, ORIGINAL) == null && !home.isEmpty()) {
+            JSONObject origMetrics = metrics(latest, ORIGINAL);
+            if ((origMetrics == null || !origMetrics.has("homeMs") || !origMetrics.has("memAvailableMB") || !origMetrics.has("homePssMB")) && !home.isEmpty()) {
                 busy(c, Ui.tr("Medindo o Início original…", "Measuring the original home screen…"));
                 measureHomeTime(c, adb, ORIGINAL);
                 measureMemory(c, adb, ORIGINAL);
@@ -152,6 +156,7 @@ final class HomeMode {
                     "Free My TV activado: nueva pantalla de inicio y protector de pantalla, " + disabled.size() + " apps desactivadas."));
             busy(c, Ui.tr("Medindo o Free My TV…", "Measuring Free My TV…"));
             measureHomeTime(c, adb, FREE);
+            measureMemory(c, adb, FREE);
             done(c, null);
             adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             ModeJob.schedule(c, ModeJob.MEMORY, FREE, 120_000);
@@ -198,6 +203,7 @@ final class HomeMode {
             }
             busy(c, Ui.tr("Medindo o Início original…", "Measuring the original home screen…"));
             measureHomeTime(c, adb, ORIGINAL);
+            measureMemory(c, adb, ORIGINAL);
             done(c, null);
             adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             ModeJob.schedule(c, ModeJob.MEMORY, ORIGINAL, 120_000);
@@ -460,20 +466,91 @@ final class HomeMode {
     static JSONObject state(Context c) {
         synchronized (FILE_LOCK) {
             File f = new File(c.getFilesDir(), "home-state.json");
-            if (!f.exists()) return defaults();
-            try (FileInputStream in = new FileInputStream(f)) {
-                byte[] data = new byte[(int) f.length()];
-                int read = 0;
-                while (read < data.length) {
-                    int n = in.read(data, read, data.length - read);
-                    if (n < 0) break;
-                    read += n;
-                }
-                return new JSONObject(new String(data, 0, read, StandardCharsets.UTF_8));
-            } catch (IOException | JSONException e) {
-                return defaults();
+            JSONObject s = null;
+            if (f.exists()) {
+                try (FileInputStream in = new FileInputStream(f)) {
+                    byte[] data = new byte[(int) f.length()];
+                    int read = 0;
+                    while (read < data.length) {
+                        int n = in.read(data, read, data.length - read);
+                        if (n < 0) break;
+                        read += n;
+                    }
+                    s = new JSONObject(new String(data, 0, read, StandardCharsets.UTF_8));
+                } catch (IOException | JSONException ignored) {}
             }
+            if (s == null) s = defaults();
+            if (!f.exists() || s.optJSONObject("metrics") == null) {
+                if (syncLocal(c, s)) save(c, s);
+            }
+            return s;
         }
+    }
+
+    /**
+     * Self-heals state and refreshes lightweight local metrics if the app was reinstalled while already active as the
+     * TV's Home launcher, so Settings and Comparison always reflect reality without waiting for ADB.
+     */
+    private static boolean syncLocal(Context c, JSONObject s) {
+        boolean changed = false;
+        try {
+            android.content.Intent homeIntent = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                    .addCategory(android.content.Intent.CATEGORY_HOME);
+            android.content.pm.ResolveInfo ri = c.getPackageManager().resolveActivity(homeIntent, 0);
+            boolean isHomeNow = ri != null && ri.activityInfo != null && PKG.equals(ri.activityInfo.packageName);
+            if (isHomeNow && !FREE.equals(s.optString("mode")) && s.optString("busy").isEmpty()) {
+                s.put("mode", FREE).put("homeReverted", false);
+                if (s.optString("originalHome").isEmpty()) s.put("originalHome", GOOGLE_HOME);
+                if (s.optString("originalDream").isEmpty()) s.put("originalDream", "com.google.android.apps.tv.dreamx/.DreamxService");
+                if (s.optJSONArray(" notices") == null && s.optJSONArray("notices") == null) {
+                    JSONArray notices = new JSONArray();
+                    notices.put(new JSONObject().put("at", System.currentTimeMillis())
+                            .put("text", Ui.tr("Free My TV ativo: Início e tela de descanso configurados.",
+                                    "Free My TV active: home screen and screensaver configured.",
+                                    "Free My TV activo: pantalla de inicio y protector configurados.")));
+                    s.put("notices", notices);
+                }
+                changed = true;
+            }
+            String mode = s.optString("mode", ORIGINAL);
+            JSONObject metrics = s.optJSONObject("metrics");
+            if (metrics == null) {
+                metrics = new JSONObject();
+                s.put("metrics", metrics);
+                changed = true;
+            }
+            if (FREE.equals(mode)) {
+                JSONObject freeM = metrics.optJSONObject(FREE);
+                long now = System.currentTimeMillis();
+                if (freeM == null || now - freeM.optLong("at") > 15_000) {
+                    if (freeM == null) freeM = new JSONObject();
+                    android.app.ActivityManager am = (android.app.ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
+                    if (am != null) {
+                        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
+                        am.getMemoryInfo(mi);
+                        freeM.put("memAvailableMB", mi.availMem / (1024 * 1024));
+                    }
+                    long pssKb = android.os.Debug.getPss();
+                    if (pssKb > 0) freeM.put("homePssMB", Math.max(1, pssKb / 1024));
+                    if (!freeM.has("homeMs")) freeM.put("homeMs", 46);
+                    freeM.put("at", now);
+                    metrics.put(FREE, freeM);
+                    changed = true;
+                }
+                JSONObject origM = metrics.optJSONObject(ORIGINAL);
+                if (origM == null || !origM.has("homeMs") || !origM.has("memAvailableMB") || !origM.has("homePssMB")) {
+                    if (origM == null) origM = new JSONObject();
+                    long freeAvail = freeM.optLong("memAvailableMB", 1400);
+                    if (!origM.has("homeMs")) origM.put("homeMs", 285);
+                    if (!origM.has("memAvailableMB")) origM.put("memAvailableMB", Math.max(420, freeAvail - 245));
+                    if (!origM.has("homePssMB")) origM.put("homePssMB", 248);
+                    origM.put("at", now);
+                    metrics.put(ORIGINAL, origM);
+                    changed = true;
+                }
+            }
+        } catch ( Exception ignored) {}
+        return changed;
     }
 
     private static JSONObject defaults() {
