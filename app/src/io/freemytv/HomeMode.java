@@ -446,18 +446,18 @@ final class HomeMode {
 
     private static void putMetric(Context c, String mode, String key, long value) throws JSONException {
         JSONObject s = state(c);
-        JSONObject metrics = s.optJSONObject("metrics");
+        JSONObject metrics = s.optJSONObject("measured");
         if (metrics == null) metrics = new JSONObject();
         JSONObject m = metrics.optJSONObject(mode);
         if (m == null) m = new JSONObject();
         m.put(key, value).put("at", System.currentTimeMillis());
         metrics.put(mode, m);
-        s.put("metrics", metrics);
+        s.put("measured", metrics);
         save(c, s);
     }
 
     private static JSONObject metrics(JSONObject s, String mode) {
-        JSONObject metrics = s.optJSONObject("metrics");
+        JSONObject metrics = s.optJSONObject("measured");
         return metrics == null ? null : metrics.optJSONObject(mode);
     }
 
@@ -480,16 +480,18 @@ final class HomeMode {
                 } catch (IOException | JSONException ignored) {}
             }
             if (s == null) s = defaults();
-            if (!f.exists() || s.optJSONObject("metrics") == null) {
-                if (syncLocal(c, s)) save(c, s);
-            }
+            // "metrics" (before "measured") could hold made-up numbers: drop them, the next switch measures again.
+            boolean stale = s.remove("metrics") != null;
+            // Only needed while the state doesn't say Free My TV yet (it asks the package manager).
+            boolean healed = !FREE.equals(s.optString("mode")) && syncLocal(c, s);
+            if (healed || stale) save(c, s);
             return s;
         }
     }
 
     /**
-     * Self-heals state and refreshes lightweight local metrics if the app was reinstalled while already active as the
-     * TV's Home launcher, so Settings and Comparison always reflect reality without waiting for ADB.
+     * Self-heals the state if the app's data was lost while it was already the TV's home screen. Measurements are
+     * never filled in here: the comparison shows only what measureHomeTime and measureMemory really measured.
      */
     private static boolean syncLocal(Context c, JSONObject s) {
         boolean changed = false;
@@ -511,43 +513,6 @@ final class HomeMode {
                     s.put("notices", notices);
                 }
                 changed = true;
-            }
-            String mode = s.optString("mode", ORIGINAL);
-            JSONObject metrics = s.optJSONObject("metrics");
-            if (metrics == null) {
-                metrics = new JSONObject();
-                s.put("metrics", metrics);
-                changed = true;
-            }
-            if (FREE.equals(mode)) {
-                JSONObject freeM = metrics.optJSONObject(FREE);
-                long now = System.currentTimeMillis();
-                if (freeM == null || now - freeM.optLong("at") > 15_000) {
-                    if (freeM == null) freeM = new JSONObject();
-                    android.app.ActivityManager am = (android.app.ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
-                    if (am != null) {
-                        android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
-                        am.getMemoryInfo(mi);
-                        freeM.put("memAvailableMB", mi.availMem / (1024 * 1024));
-                    }
-                    long pssKb = android.os.Debug.getPss();
-                    if (pssKb > 0) freeM.put("homePssMB", Math.max(1, pssKb / 1024));
-                    if (!freeM.has("homeMs")) freeM.put("homeMs", 46);
-                    freeM.put("at", now);
-                    metrics.put(FREE, freeM);
-                    changed = true;
-                }
-                JSONObject origM = metrics.optJSONObject(ORIGINAL);
-                if (origM == null || !origM.has("homeMs") || !origM.has("memAvailableMB") || !origM.has("homePssMB")) {
-                    if (origM == null) origM = new JSONObject();
-                    long freeAvail = freeM.optLong("memAvailableMB", 1400);
-                    if (!origM.has("homeMs")) origM.put("homeMs", 285);
-                    if (!origM.has("memAvailableMB")) origM.put("memAvailableMB", Math.max(420, freeAvail - 245));
-                    if (!origM.has("homePssMB")) origM.put("homePssMB", 248);
-                    origM.put("at", now);
-                    metrics.put(ORIGINAL, origM);
-                    changed = true;
-                }
             }
         } catch ( Exception ignored) {}
         return changed;

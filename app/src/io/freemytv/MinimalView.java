@@ -102,6 +102,43 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         tick.run();
         if (tvInputs != null) tvInputs.registerCallback(inputCallback, main);
         load();
+        freeMemory();
+    }
+
+    private long freedAt;   // main thread
+
+    /**
+     * Back on the home screen: stops the TV apps left in the background (a streaming app keeps 80-150 MB), so the
+     * next app finds that memory free; the price is that an app you've just left starts afresh. Android 12 on Sony
+     * ignores ActivityManager.killBackgroundProcesses from apps, so this goes through Free My TV's own ADB connection
+     * (`am kill`, which only touches background processes). At most every 30 s: each run opens that connection.
+     */
+    private void freeMemory() {
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (freedAt != 0 && now - freedAt < 30_000) return;
+        freedAt = now;
+        final Context c = getContext().getApplicationContext();
+        worker.execute(new Runnable() {
+            @Override public void run() {
+                android.content.pm.PackageManager pm = c.getPackageManager();
+                android.content.Intent tvApps = new android.content.Intent(android.content.Intent.ACTION_MAIN)
+                        .addCategory(android.content.Intent.CATEGORY_LEANBACK_LAUNCHER);
+                StringBuilder cmd = new StringBuilder();
+                java.util.Set<String> seen = new java.util.HashSet<>();
+                for (android.content.pm.ResolveInfo ri : pm.queryIntentActivities(tvApps, 0)) {
+                    String pkg = ri.activityInfo.packageName;
+                    if (pkg.equals(c.getPackageName()) || !seen.add(pkg)) continue;
+                    if (cmd.length() > 0) cmd.append("; ");
+                    cmd.append("am kill ").append(pkg);
+                }
+                if (cmd.length() == 0) return;
+                try (Adb adb = Adb.connect(c, 0, null)) {   // 0: never wait for a permission prompt
+                    adb.shell(cmd.toString());
+                } catch (Exception e) {
+                    AppLog.w("couldn't free background apps: " + e.getMessage());
+                }
+            }
+        });
     }
 
     @Override public void pause() {
@@ -121,6 +158,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         firstRow = 0;
         rowScroll = 0;
         startFocus(-1, -1);
+        freeMemory();   // Home pressed on the home screen: no resume, so free here too
     }
 
     /** Apps, inputs and shortcuts, read in the background (the shelf may lift logos from the apps' art). */
