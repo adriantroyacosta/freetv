@@ -262,6 +262,8 @@ final class HomeApps {
             } catch (RuntimeException ignored) {
             }
             String label = custom != null && custom.length() > 0 ? custom.toString() : "HDMI " + number;
+            String own = inputName(number);
+            if (own != null) label = own;
             Item it = shortcut(INPUT, "hdmi" + number, label, "hdmi");
             it.inputId = info.getId();
             it.number = String.valueOf(number);
@@ -270,6 +272,19 @@ final class HomeApps {
         }
         Collections.sort(out, (a, b) -> a.number.compareTo(b.number));
         return out;
+    }
+
+    /** input_names in config.properties ("1:Nintendo,3:PS5"): your name for HDMI `number`, or null. */
+    private static String inputName(int number) {
+        for (String pair : Config.INPUT_NAMES.split(",")) {
+            int colon = pair.indexOf(':');
+            if (colon <= 0) continue;
+            if (pair.substring(0, colon).trim().equals(String.valueOf(number))) {
+                String name = pair.substring(colon + 1).trim();
+                return name.isEmpty() ? null : name;
+            }
+        }
+        return null;
     }
 
     /** Installed, enabled TV apps that are not on the home screen (the TV's Settings is among them), plus our own. */

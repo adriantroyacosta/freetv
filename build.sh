@@ -71,6 +71,7 @@ final class Config {
     static final int SHELF_COLUMNS = $COLS;
     static final int CARDS = $CARDS;
     static final String SHELF_APPS = "$(prop shelf_apps '')";
+    static final String INPUT_NAMES = "$(prop input_names '')";
 }
 EOF
 

@@ -88,7 +88,8 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         setFocusable(true);
         buttons.add(HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV", "TV en vivo"), "live_tv"));
         buttons.add(HomeApps.action(HomeApps.INPUTS, "inputs", Ui.tr("Entradas HDMI", "HDMI Inputs", "Entradas HDMI"), "hdmi"));
-        buttons.add(HomeApps.action(HomeApps.SETTINGS, "settings", Ui.tr("Configurações", "Settings", "Ajustes"), "settings"));
+        buttons.add(HomeApps.action(HomeApps.ANDROID_SETTINGS, "tv-settings",
+                Ui.tr("Ajustes da TV", "TV Settings", "Ajustes de la TV"), "tv_settings"));
         ring.setStyle(Paint.Style.STROKE);
         ring.setColor(Color.WHITE);
     }
@@ -128,9 +129,14 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         worker.execute(new Runnable() {
             @Override public void run() {
                 final List<HomeApps.Item> a = HomeApps.shelf(c, false);
-                final List<HomeApps.Item> in = HomeApps.allInputs(c);
+                // Bottom row: the HDMI inputs (Live TV has its corner button), then All Apps and Home Settings
+                // (TV Settings has its corner button).
+                final List<HomeApps.Item> in = new ArrayList<>();
+                for (HomeApps.Item it : HomeApps.allInputs(c)) if (it.kind == HomeApps.INPUT) in.add(it);
                 final List<HomeApps.Item> row = new ArrayList<>(in);
-                row.addAll(HomeApps.drawerShortcuts());
+                for (HomeApps.Item it : HomeApps.drawerShortcuts()) {
+                    if (it.kind != HomeApps.ANDROID_SETTINGS) row.add(it);
+                }
                 final List<HomeApps.Item> o = allApps ? HomeApps.others(c) : null;
                 main.post(new Runnable() {
                     @Override public void run() {
