@@ -495,6 +495,10 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         c.drawText(shorten(cardText, it, it.label, cardPaint, box.right - 20 * k - textX), textX,
                 box.centerY() + Ui.halfCap(cardPaint), cardPaint);
         cardPaint.setAlpha(255);
+        if (it.kind == HomeApps.INPUT && it.connected) {   // a device is on and sending a signal: the green dot
+            fill.setColor(0xFF30D158);
+            c.drawCircle(box.right - 16 * k, box.top + 16 * k, 5 * k, fill);
+        }
         if (f > 0.01f) {
             ring.setAlpha((int) (255 * f));
             c.drawRoundRect(box, radius, radius, ring);
