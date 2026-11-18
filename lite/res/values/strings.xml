@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Free My TV Lite</string>
+    <string name="settings">Settings</string>
+    <string name="amazon_home">Amazon home</string>
+    <string name="all_apps">All apps</string>
+</resources>
