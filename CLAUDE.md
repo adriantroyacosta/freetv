@@ -70,8 +70,14 @@ TVs that don't run Google TV or Android TV (Samsung, LG and others): the way is 
 ## The code
 
 - Java 8 language level, minSdk 31 (Android 12), targetSdk 33. No Gradle, no libraries: only the Android SDK.
-- The home screen is drawn by hand on one Canvas (`HomeView`); the glass and the sky are AGSL shaders (`Shaders`,
+- Two home screens, picked by `home_style` in `config.properties`: `minimal` (the default, `MinimalView`: black,
+  clock, corner buttons, apps, inputs row; `ClockDream` as the screensaver) and `full` (`HomeView`, below). Both
+  implement `HomeScreen`.
+- The full home screen is drawn by hand on one Canvas (`HomeView`); the glass and the sky are AGSL shaders (`Shaders`,
   Android 13+, with a fallback for 12). Keep it at 60 fps: no allocations in `onDraw`, no work on the UI thread.
+- `lite/` is a separate app for old Fire TV sticks (Fire OS 5, Android 5.1), built with `./build-lite.sh`. Fire OS
+  allows no other home screen, so it reads Amazon's home log lines (`pm grant io.freemytv.lite
+  android.permission.READ_LOGS`) and covers it with an overlay; see `HomeButton`.
 - `HomeMode` runs every switch as a background job (`ModeJob`) in the main process; the UI is in the `:home`
   process. `Watchdog` goes back to the stock home screen after 3 crashes in 5 minutes.
 - On-screen text is bilingual, `Ui.tr("pt", "en")`: add both. Comments in English, short, only where the why

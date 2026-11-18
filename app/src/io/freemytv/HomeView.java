@@ -51,7 +51,7 @@ import java.util.concurrent.Executors;
  * Measurements are in a 1920×1080 space (k = width / 1920). The screen is split into layers so the TV's weak GPU only
  * redraws what changed.
  */
-final class HomeView extends ViewGroup implements Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
+final class HomeView extends ViewGroup implements HomeScreen, Choreographer.FrameCallback, HomeData.Listener, Recs.Listener {
     // tvOS grid (Human Interface Guidelines): content inside the safe area, 80 px from the sides and 60 from top and
     // bottom; 40 px between items; 7 columns of 217 px (the apps). The shelf glass extends 36 px past the tiles (the
     // same padding on all four sides) and the tile corners are concentric with it (glass radius = radius + padding).
@@ -328,7 +328,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     // MARK: - Lifecycle (called by HomeActivity)
 
-    void resume() {
+    public void resume() {
         if (running) return;
         running = true;
         checkNight(false);
@@ -352,7 +352,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         wake();
     }
 
-    void pause() {
+    public void pause() {
         if (!running) return;
         running = false;
         frameScheduled = false;
@@ -363,13 +363,13 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (tvInputs != null) tvInputs.unregisterCallback(inputCallback);
     }
 
-    void destroy() {
+    public void destroy() {
         pause();
         click.release();
     }
 
     /** Starting state (Home pressed while the home screen is showing): first app focused, drawer and sheet closed. */
-    void reset(boolean animated) {
+    public void reset(boolean animated) {
         zone = Z_SHELF;
         shelfIndex = 0;
         sheetOpen = false;
@@ -1753,7 +1753,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
 
     // MARK: - Keys: only the arrows, OK and Back (system keys pass through to the system)
 
-    boolean onKey(KeyEvent e) {
+    public boolean onKey(KeyEvent e) {
         boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
         switch (e.getKeyCode()) {
             case KeyEvent.KEYCODE_DPAD_LEFT:
