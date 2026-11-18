@@ -76,6 +76,7 @@ final class HomeView extends View {
     private final Paint labelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint namePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint cardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint edgePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF box = new RectF();
     private final Path clip = new Path();
@@ -104,7 +105,7 @@ final class HomeView extends View {
         used = c.getSharedPreferences("used", Context.MODE_PRIVATE);
         setFocusable(true);
         setFocusableInTouchMode(true);
-        setBackgroundColor(Color.BLACK);
+        setBackgroundColor(0xFF111216);   // near-black gray: dark app art stands out (same as the Google TV one)
 
         Typeface light = Typeface.create("sans-serif-light", Typeface.NORMAL);
         clockPaint.setColor(Color.WHITE);
@@ -114,7 +115,9 @@ final class HomeView extends View {
         labelPaint.setTextAlign(Paint.Align.CENTER);
         namePaint.setColor(Color.WHITE);
         namePaint.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-        cardPaint.setColor(0xFF1C1C1E);
+        cardPaint.setColor(0xFF1E1F24);
+        edgePaint.setStyle(Paint.Style.STROKE);
+        edgePaint.setColor(0x1AFFFFFF);   // a hairline edge, so tiles don't melt into the background
         ringPaint.setColor(Color.WHITE);
         ringPaint.setStyle(Paint.Style.STROKE);
     }
@@ -487,6 +490,7 @@ final class HomeView extends View {
         namePaint.setTextSize(h * 0.034f);
         labelPaint.setTextSize(tileH * 0.13f);
         ringPaint.setStrokeWidth(Math.max(3, h * 0.004f));
+        edgePaint.setStrokeWidth(Math.max(1, h * 0.0014f));
         clockY = h * 0.17f;
         dateY = clockY + h * 0.06f;
         nameY = h * 0.335f;
@@ -524,8 +528,7 @@ final class HomeView extends View {
         int save = c.save();
         if (focused) c.scale(1.08f, 1.08f, box.centerX(), box.centerY());
         // Dim the rest so focus is obvious (alpha, not a layer: layers are costly on these GPUs).
-        int alpha = focused ? 255 : 150;
-        cardPaint.setAlpha(alpha);
+        int alpha = focused ? 255 : 185;   // the card under the art stays opaque: dark art still reads as a card
         labelPaint.setAlpha(alpha);
 
         c.drawRoundRect(box, radius, radius, cardPaint);
@@ -552,7 +555,7 @@ final class HomeView extends View {
                 c.drawText(t.shown, box.centerX(), y + tileH * 0.85f, labelPaint);
             }
         }
-        if (focused) c.drawRoundRect(box, radius, radius, ringPaint);
+        c.drawRoundRect(box, radius, radius, focused ? ringPaint : edgePaint);
         c.restoreToCount(save);
     }
 

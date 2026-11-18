@@ -33,6 +33,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
     private static final int TOP = 0, APPS = 1, BOTTOM = 2;
     private static final int COLUMNS = 5;
     private static final long FOCUS_MS = 150;
+    private static final int BACKGROUND = 0xFF111216, PLATE = 0xFF1E1F24, CARD = 0xFF23242A, CARD_FOCUSED = 0xFF3A3B42;
 
     private final Activity activity;
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -58,6 +59,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
     private TextPaint clockPaint, datePaint, titlePaint, labelPaint, cardPaint, hintPaint;
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint hairline = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final RectF box = new RectF();
     private final Path clip = new Path();
@@ -84,7 +86,8 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         super(a);
         activity = a;
         tvInputs = (TvInputManager) a.getSystemService(Context.TV_INPUT_SERVICE);
-        setBackgroundColor(Color.BLACK);
+        // Not pure black: a near-black gray lets dark app art (Apple TV, HBO) stand out from the background.
+        setBackgroundColor(BACKGROUND);
         setFocusable(true);
         buttons.add(HomeApps.action(HomeApps.LIVE_TV, "live", Ui.tr("TV aberta", "Live TV", "TV en vivo"), "live_tv"));
         buttons.add(HomeApps.action(HomeApps.INPUTS, "inputs", Ui.tr("Entradas HDMI", "HDMI Inputs", "Entradas HDMI"), "hdmi"));
@@ -92,6 +95,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
                 Ui.tr("Ajustes da TV", "TV Settings", "Ajustes de la TV"), "tv_settings"));
         ring.setStyle(Paint.Style.STROKE);
         ring.setColor(Color.WHITE);
+        hairline.setStyle(Paint.Style.STROKE);
     }
 
     // MARK: - HomeScreen
@@ -372,6 +376,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         cardPaint = new TextPaint(Ui.text(Ui.medium, 25 * k, 0xFFE5E5EA));
         hintPaint = new TextPaint(Ui.text(Ui.medium, 24 * k, 0xFF8E8E93));
         ring.setStrokeWidth(Math.max(3, 4 * k));
+        hairline.setStrokeWidth(Math.max(1, 1.5f * k));
         tileText.clear();
         cardText.clear();
         titleText.clear();
@@ -475,7 +480,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         rectOf(TOP, i, box);
         float r = btnR * (1 + 0.1f * f);
         float cx = box.centerX(), cy = box.centerY();
-        fill.setColor(blend(0xFF1C1C1E, Color.WHITE, f));
+        fill.setColor(blend(CARD, Color.WHITE, f));
         c.drawCircle(cx, cy, r, fill);
         Symbols.draw(getContext(), c, buttons.get(i).symbol, cx, cy, 30 * k * (1 + 0.1f * f), blend(0xFFD1D1D6, Color.BLACK, f));
         if (f > 0.01f) {
@@ -491,24 +496,28 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         float s = 1 + 0.08f * f;
         int save = c.save();
         c.scale(s, s, box.centerX(), box.centerY());
-        int alpha = (int) (255 * (0.62f + 0.38f * f));
+        int alpha = (int) (255 * (0.72f + 0.28f * f));
         clip.reset();
         clip.addRoundRect(box, radius, radius, Path.Direction.CW);
         c.save();
         c.clipPath(clip);
+        fill.setColor(PLATE);   // under the art: transparent or very dark art still reads as a card
+        c.drawRect(box, fill);
         Bitmap b = it.tile;
         if (b != null) {
             bitmapPaint.setAlpha(alpha);
             c.drawBitmap(b, null, box, bitmapPaint);
         } else {
-            fill.setColor(Ui.alpha(0xFF1C1C1E, alpha / 255f));
-            c.drawRect(box, fill);
             labelPaint.setAlpha(alpha);
             c.drawText(shorten(tileText, it, it.label, labelPaint, box.width() * 0.9f), box.centerX(),
                     box.centerY() + Ui.halfCap(labelPaint), labelPaint);
             labelPaint.setAlpha(255);
         }
         c.restore();
+        if (f < 0.99f) {   // a hairline edge, so tiles don't melt into the background
+            hairline.setColor(Ui.alpha(Color.WHITE, 0.10f * (1 - f)));
+            c.drawRoundRect(box, radius, radius, hairline);
+        }
         if (f > 0.01f) {
             ring.setAlpha((int) (255 * f));
             c.drawRoundRect(box, radius, radius, ring);
@@ -524,7 +533,7 @@ final class MinimalView extends View implements HomeScreen, Choreographer.FrameC
         int save = c.save();
         c.scale(s, s, box.centerX(), box.centerY());
         float dim = it.connected ? 1 : 0.45f;
-        fill.setColor(blend(0xFF1C1C1E, 0xFF3A3A3C, f));
+        fill.setColor(blend(CARD, CARD_FOCUSED, f));
         c.drawRoundRect(box, radius, radius, fill);
         float iconX = box.left + 52 * k;
         Symbols.draw(getContext(), c, it.symbol, iconX, box.centerY(), 30 * k, Ui.alpha(Color.WHITE, dim));

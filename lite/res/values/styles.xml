@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Plain black, already in the window: no wallpaper, no flash when Home opens. -->
+    <color name="background">#111216</color>
+    <!-- The home screen's near-black, already in the window: no wallpaper, no flash when Home opens. -->
     <style name="Lite" parent="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">@color/background</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowShowWallpaper">false</item>
         <item name="android:windowAnimationStyle">@null</item>

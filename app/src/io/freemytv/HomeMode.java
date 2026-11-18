@@ -151,17 +151,17 @@ final class HomeMode {
             s.put("mode", FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(sorted(disabled)));
             save(c, s);
-            notice(c, Ui.tr("Free My TV ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
-                    "Free My TV is on: new home screen and screensaver, " + disabled.size() + " apps turned off.",
-                    "Free My TV activado: nueva pantalla de inicio y protector de pantalla, " + disabled.size() + " apps desactivadas."));
-            busy(c, Ui.tr("Medindo o Free My TV…", "Measuring Free My TV…"));
+            notice(c, Ui.tr("TVos ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
+                    "TVos is on: new home screen and screensaver, " + disabled.size() + " apps turned off.",
+                    "TVos activado: nueva pantalla de inicio y protector de pantalla, " + disabled.size() + " apps desactivadas."));
+            busy(c, Ui.tr("Medindo o TVos…", "Measuring TVos…"));
             measureHomeTime(c, adb, FREE);
             measureMemory(c, adb, FREE);
             done(c, null);
             adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             ModeJob.schedule(c, ModeJob.MEMORY, FREE, 120_000);
         } catch (Exception e) {
-            done(c, Ui.tr("Não deu para ligar o Free My TV: ", "Couldn't turn on Free My TV: ") + e.getMessage());
+            done(c, Ui.tr("Não deu para ligar o TVos: ", "Couldn't turn on TVos: ") + e.getMessage());
         }
     }
 
@@ -238,8 +238,8 @@ final class HomeMode {
                 }
                 s.put("homeReverted", true).put("disabled", kept);
                 save(app, s);
-                notice(app, Ui.tr("O Início do Free My TV caiu 3 vezes seguidas; voltei para o Início original.",
-                        "Free My TV's home screen crashed 3 times in a row; I switched back to the original one."));
+                notice(app, Ui.tr("O Início do TVos caiu 3 vezes seguidas; voltei para o Início original.",
+                        "The TVos home screen crashed 3 times in a row; I switched back to the original one."));
                 adb.shell("am start -a android.intent.action.MAIN -c android.intent.category.HOME");
             } catch (Exception e) {
                 AppLog.w("could not give the home screen back: " + e.getMessage());
@@ -296,14 +296,14 @@ final class HomeMode {
                 latest.put("disabled", new JSONArray(sorted(disabled)));
                 save(app, latest);
             } catch (Exception e) {
-                notice(app, Ui.tr("Não consegui conferir o Free My TV: ", "Couldn't check Free My TV: ") + e.getMessage());
+                notice(app, Ui.tr("Não consegui conferir o TVos: ", "Couldn't check TVos: ") + e.getMessage());
                 return;
             }
             if (!fixed.isEmpty()) {
                 notice(app, (updated ? Ui.tr("A atualização da TV religou ", "The TV update turned back on ")
                         : Ui.tr("Desliguei o que faltava: ", "Turned off what was missing: ")) + String.join(", ", fixed) + ".");
             } else if (updated) {
-                notice(app, Ui.tr("A TV foi atualizada; o Free My TV continua igual.", "The TV was updated; Free My TV is still on."));
+                notice(app, Ui.tr("A TV foi atualizada; o TVos continua igual.", "The TV was updated; TVos is still on."));
             }
         }
     }
@@ -507,9 +507,9 @@ final class HomeMode {
                 if (s.optJSONArray(" notices") == null && s.optJSONArray("notices") == null) {
                     JSONArray notices = new JSONArray();
                     notices.put(new JSONObject().put("at", System.currentTimeMillis())
-                            .put("text", Ui.tr("Free My TV ativo: Início e tela de descanso configurados.",
-                                    "Free My TV active: home screen and screensaver configured.",
-                                    "Free My TV activo: pantalla de inicio y protector configurados.")));
+                            .put("text", Ui.tr("TVos ativo: Início e tela de descanso configurados.",
+                                    "TVos active: home screen and screensaver configured.",
+                                    "TVos activo: pantalla de inicio y protector configurados.")));
                     s.put("notices", notices);
                 }
                 changed = true;

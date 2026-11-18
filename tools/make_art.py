@@ -99,11 +99,24 @@ def banner(w=640, h=360):
     return img.resize((w, h), Image.LANCZOS)
 
 
+def wordmark(w, h, text_h):
+    """The TV apps' logo: just "TVos" in white on black, nothing else."""
+    s = 4
+    img = Image.new("RGBA", (w * s, h * s), (0, 0, 0, 255))
+    d = ImageDraw.Draw(img)
+    f = font(int(text_h * s), 600)
+    box = d.textbbox((0, 0), "TVos", font=f)
+    x = (w * s - (box[2] - box[0])) // 2 - box[0]
+    y = (h * s - (box[3] - box[1])) // 2 - box[1]
+    d.text((x, y), "TVos", font=f, fill=(255, 255, 255, 255))
+    return img.resize((w, h), Image.LANCZOS)
+
+
 if __name__ == "__main__":
-    res = os.path.join(ROOT, "app/res/drawable-nodpi")
+    res = os.path.join(ROOT, "app/res/drawable-nodpi")   # also used by lite/ (build-lite.sh)
     os.makedirs(res, exist_ok=True)
-    mark(192).save(os.path.join(res, "icon.png"))
-    banner().save(os.path.join(res, "banner.png"))
+    wordmark(192, 192, 52).save(os.path.join(res, "icon.png"))
+    wordmark(640, 360, 120).save(os.path.join(res, "banner.png"))
     site = os.path.join(ROOT, "docs/assets")
     os.makedirs(site, exist_ok=True)
     mark(512).save(os.path.join(site, "icon-512.png"))
